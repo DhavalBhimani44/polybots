@@ -6,10 +6,13 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "inngest:dev": "inngest dev",
+    "inngest:dev:with-key": "node inngest-dev.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
+    "@inngest/agent-kit": "^0.8.3",
     "@prisma/client": "^6.10.1",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
