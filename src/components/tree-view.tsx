@@ -95,7 +95,7 @@ const Tree = ({
                         <ChevronRightIcon className="transition-transform" />
                         <FolderIcon />
                         <span className="truncate">
-                            Folder
+                            {name}
                         </span>
                     </SidebarMenuButton>
                 </CollapsibleTrigger>
