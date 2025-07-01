@@ -17,9 +17,10 @@ const Page = async ({ params }: Props) => {
         headers: await headers()
     })
   
-    if(!!session){
+    if(!session){
       redirect('/sign-in')
     }
+
     const { projectId } = await params
 
     const queryClient = getQueryClient()
