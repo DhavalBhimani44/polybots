@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from '@/components/ui/button'
+import { authClient } from '@/lib/auth-client'
 import { useTRPC } from '@/trpc/client'
 import { useQuery } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
@@ -10,11 +11,15 @@ import Link from 'next/link'
 export const ProjectsList = () => {
     const trpc = useTRPC()
     const { data: projects } = useQuery(trpc.projects.getMany.queryOptions())
+    const { data: session } = authClient.useSession()
+    const user = session?.user
+
+    if (!user) return null;
 
     return (
         <div className='w-full bg-white dark:bg-sidebar rounded-xl p-8 border flex flex-col gap-y-6 sm:gap-y-4'>
             <h2 className='text-2xl font-semibold'>
-                Saved bots
+                {user?.name}&apos;s Polybots
             </h2>
             <div className='grid grid-cols-1 sm:grid-cols-3 gap-6'>
                 {projects?.length === 0 && (
@@ -45,7 +50,7 @@ export const ProjectsList = () => {
                                         {project.name}
                                     </h3>
                                     <p className='text-sm text-muted-foreground'>
-                                        {formatDistanceToNow(project.updatedAt, {addSuffix: true})}
+                                        {formatDistanceToNow(project.updatedAt, { addSuffix: true })}
                                     </p>
                                 </div>
                             </div>

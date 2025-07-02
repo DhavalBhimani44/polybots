@@ -14,12 +14,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { authClient } from "@/lib/auth-client"
-import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { useTheme } from "next-themes"
 
 export const Navbar = () => {
-    const router = useRouter()
     const { theme, setTheme } = useTheme()
     const { data: session, isPending } = authClient.useSession()
     const user = session?.user
@@ -29,7 +27,6 @@ export const Navbar = () => {
             await authClient.signOut({
                 fetchOptions: {
                     onSuccess: () => {
-                        router.push('/sign-in')
                         toast.success("Successfully logged out")
                     }
                 }
