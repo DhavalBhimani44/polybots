@@ -1,5 +1,6 @@
 import { inngest } from "@/inngest/client";
 import { prisma } from "@/lib/db";
+import { consumeCredits } from "@/lib/usage";
 import { authProcedure, createTRPCRouter } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
 import { generateSlug } from "random-word-slugs";
@@ -61,7 +62,21 @@ export const projectsRouter = createTRPCRouter({
           });
         }
 
-        console.log("Creating project with user ID:", ctx.userId);
+        try {
+          await consumeCredits();
+        } catch (error) {
+          if (error instanceof Error) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Something went wrong",
+            });
+          } else {
+            throw new TRPCError({
+              code: "TOO_MANY_REQUESTS",
+              message: "You have run out of credits",
+            });
+          }
+        }
 
         const createdProject = await prisma.project.create({
           data: {
