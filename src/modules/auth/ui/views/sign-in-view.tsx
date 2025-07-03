@@ -131,14 +131,9 @@ export default function SignInView() {
                                         disabled={loadingButton !== null}
                                         onClick={() => {
                                             setLoadingButton('google');
-                                            try {
-                                                authClient.signIn.social({
-                                                    provider: 'google',
-                                                });
-                                            } catch (error) {
-                                                setLoadingButton(null);
-                                                console.error(error);   
-                                            }
+                                            authClient.signIn.social({
+                                                provider: 'google',
+                                            });
                                         }}
                                         variant={'outline'}
                                         type='button'

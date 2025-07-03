@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Define public paths as regexes
 const publicPaths = [
-  /^\/$/,                     
-  /^\/sign-in(\/.*)?$/,         
-  /^\/sign-up(\/.*)?$/,         
-  /^\/api\/inngest(\/.*)?$/,    
-  /^\/pricing(\/.*)?$/,           
+  /^\/$/,
+  /^\/sign-in(\/.*)?$/,
+  /^\/sign-up(\/.*)?$/,
+  /^\/api\/inngest(\/.*)?$/,
+  /^\/pricing(\/.*)?$/,
 ];
 
 // Static resources to skip
@@ -29,10 +29,13 @@ export async function middleware(request: NextRequest) {
 
   if (isResourcePath(path)) return NextResponse.next();
 
-  const hasSessionCookie = request.cookies.has("better-auth.session_token");
+  const hasSessionCookie =
+    request.cookies.has("__Secure-better-auth.session_token") ||
+    request.cookies.has("better-auth.session_token"); // for local/dev fallback
 
   if (path === "/sign-in" || path === "/sign-up") {
-    if (hasSessionCookie) return NextResponse.redirect(new URL("/", request.url));
+    if (hasSessionCookie)
+      return NextResponse.redirect(new URL("/", request.url));
     return NextResponse.next();
   }
 
@@ -48,7 +51,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
