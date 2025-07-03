@@ -102,7 +102,7 @@ export const Navbar = () => {
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem asChild>
-                                    <Link href="/" className="cursor-pointer">
+                                    <Link href="/pricing" className="cursor-pointer">
                                         <CreditCardIcon className="mr-2 h-4 w-4" />
                                         <span>Billing</span>
                                     </Link>
