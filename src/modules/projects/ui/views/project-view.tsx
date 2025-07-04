@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { FileExplorer } from "@/components/file-explorer"
 import { ErrorBoundary } from "react-error-boundary"
+import { UserControls } from "@/components/user-control"
 
 interface Props {
     projectId: string
@@ -64,12 +65,13 @@ export const ProjectView = ({ projectId }: Props) => {
                                     <CodeIcon /><span>code</span>
                                 </TabsTrigger>
                             </TabsList>
-                            <div className="flex items-center gap-x-2 ml-auto">
+                            <div className="flex items-center gap-x-4 ml-auto">
                                 <Button asChild size={'sm'} variant={'tertiary'}>
                                     <Link href='/pricing'>
                                         <CrownIcon />Upgrade
                                     </Link>
                                 </Button>
+                                <UserControls />
                             </div>
                         </div>
                         <TabsContent value="preview">
