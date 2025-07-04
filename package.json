@@ -10,7 +10,8 @@
     "inngest:dev": "inngest dev",
     "inngest:dev:with-key": "node inngest-dev.js",
     "inngest:cli": "npx inngest-cli@latest dev",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "postbuild": "prisma migrate deploy"
   },
   "dependencies": {
     "@e2b/code-interpreter": "^1.5.1",
