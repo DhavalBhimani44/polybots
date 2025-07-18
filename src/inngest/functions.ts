@@ -1,12 +1,12 @@
 import { inngest } from "./client";
 import {
-  openai,
   createAgent,
   createTool,
   createNetwork,
   type Tool,
   type Message,
   createState,
+  gemini,
 } from "@inngest/agent-kit";
 
 import { Sandbox } from "@e2b/code-interpreter";
@@ -71,12 +71,9 @@ export const codeAgentFunction = inngest.createFunction(
       name: "code-agent",
       description: "An expert coding agent",
       system: PROMPT,
-      model: openai({
-        model: "gpt-4.1",
-        apiKey: process.env.OPENAI_API_KEY,
-        defaultParameters: {
-          temperature: 0.1,
-        },
+      model: gemini({
+        model: "gemini-2.0-flash-exp",
+        apiKey: process.env.GEMINI_API_KEY,
       }),
       tools: [
         createTool({
@@ -209,9 +206,9 @@ export const codeAgentFunction = inngest.createFunction(
       name: "fragment-title-generator",
       description: "Generates fragment",
       system: FRAGMENT_TITLE_PROMPT,
-      model: openai({
-        model: "gpt-4o-mini",
-        apiKey: process.env.OPENAI_API_KEY,
+      model: gemini({
+        model: "gemini-2.0-flash-exp",
+        apiKey: process.env.GEMINI_API_KEY,
       }),
     });
 
@@ -219,9 +216,9 @@ export const codeAgentFunction = inngest.createFunction(
       name: "response-generator",
       description: "Generates response",
       system: RESPONSE_PROMPT,
-      model: openai({
-        model: "gpt-4o-mini",
-        apiKey: process.env.OPENAI_API_KEY,
+      model: gemini({
+        model: "gemini-2.0-flash-exp",
+        apiKey: process.env.GEMINI_API_KEY,
       }),
     });
 
