@@ -1,18 +1,18 @@
 import { inngest } from "./client";
 import {
+  openai,
   createAgent,
   createTool,
   createNetwork,
   type Tool,
   type Message,
   createState,
-  gemini,
 } from "@inngest/agent-kit";
 
 import { Sandbox } from "@e2b/code-interpreter";
 import { getSandbox, lastAssistantTextMessageContext, parseAgentOutput } from "./utils";
 import { z } from "zod";
-import { FRAGMENT_TITLE_PROMPT, PROMPT, RESPONSE_PROMPT } from "@/prompt";
+import { FRAGMENT_TITLE_PROMPT, PROMPT, RESPONSE_PROMPT, USER_STORIES_PROMPT } from "@/prompt";
 import { prisma } from "@/lib/db";
 
 interface AgentState {
@@ -71,9 +71,13 @@ export const codeAgentFunction = inngest.createFunction(
       name: "code-agent",
       description: "An expert coding agent",
       system: PROMPT,
-      model: gemini({
+      model: openai({
         model: "gemini-2.0-flash-exp",
         apiKey: process.env.GEMINI_API_KEY,
+        baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/",
+        defaultParameters: {
+          temperature: 0.1,
+        },
       }),
       tools: [
         createTool({
@@ -99,9 +103,9 @@ export const codeAgentFunction = inngest.createFunction(
                 return result.stdout;
               } catch (e) {
                 console.error(
-                  `Command failed: ${e} \nstdout: ${buffers.stdout} \nstderr: ${buffers.stderr}`
+                  `Command failed: ${e}\nstdout: ${buffers.stdout}\nstderr: ${buffers.stderr}`
                 );
-                return `Command failed: ${e} \nstdout: ${buffers.stdout} \nstderr: ${buffers.stderr}`;
+                return `Command failed: ${e}\nstdout: ${buffers.stdout}\nstderr: ${buffers.stderr}`;
               }
             });
           },
@@ -185,6 +189,46 @@ export const codeAgentFunction = inngest.createFunction(
       },
     });
 
+    // Step 1: Generate User Stories first
+    const userStoriesGenerator = createAgent({
+      name: "user-stories-generator",
+      description: "Generates structured user stories with acceptance criteria",
+      system: USER_STORIES_PROMPT,
+      model: openai({
+        model: "gemini-2.0-flash-exp",
+        apiKey: process.env.GEMINI_API_KEY,
+        baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/",
+      }),
+    });
+
+    const { output: userStoriesOutput } = await userStoriesGenerator.run(
+      event.data.value || "Generate user stories for a web application"
+    );
+
+    // Save User Stories first
+    await step.run("save-user-stories", async () => {
+      try {
+        return await prisma.message.create({
+          data: {
+            projectId: event.data.projectId,
+            content: parseAgentOutput(userStoriesOutput),
+            role: "ASSISTANT",
+            type: "RESULT",
+          },
+        });
+      } catch (error) {
+        return await prisma.message.create({
+          data: {
+            projectId: event.data.projectId,
+            content: "Something went wrong generating user stories. Please try again!",
+            role: "ASSISTANT",
+            type: "ERROR",
+          },
+        });
+      }
+    });
+
+    // Step 2: Run Code Agent
     const network = createNetwork<AgentState>({
       name: "coding-agent-network",
       agents: [codeAgent],
@@ -200,15 +244,17 @@ export const codeAgentFunction = inngest.createFunction(
       },
     });
 
-    const result = await network.run(event.data.value, { state });
+    const result = await network.run(event.data.value || "Build a web application", { state });
 
+    // Step 3: Generate response and fragment title
     const fragmentTitleGenerator = createAgent({
       name: "fragment-title-generator",
       description: "Generates fragment",
       system: FRAGMENT_TITLE_PROMPT,
-      model: gemini({
+      model: openai({
         model: "gemini-2.0-flash-exp",
         apiKey: process.env.GEMINI_API_KEY,
+        baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/",
       }),
     });
 
@@ -216,17 +262,18 @@ export const codeAgentFunction = inngest.createFunction(
       name: "response-generator",
       description: "Generates response",
       system: RESPONSE_PROMPT,
-      model: gemini({
+      model: openai({
         model: "gemini-2.0-flash-exp",
         apiKey: process.env.GEMINI_API_KEY,
+        baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/",
       }),
     });
 
     const { output: fragmentTitleOutput } = await fragmentTitleGenerator.run(
-      result.state.data.summary
+      result.state.data.summary || "Web application built successfully"
     );
     const { output: responseOutput } = await responseGenerator.run(
-      result.state.data.summary
+      result.state.data.summary || "Web application built successfully"
     );
 
     const isError =
@@ -239,7 +286,8 @@ export const codeAgentFunction = inngest.createFunction(
       return `http://${host}`;
     });
 
-    await step.run("save-result", async () => {
+    // Step 4: Save Code Result
+    await step.run("save-code-result", async () => {
       if (isError) {
         return await prisma.message.create({
           data: {
