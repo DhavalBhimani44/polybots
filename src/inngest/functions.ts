@@ -216,7 +216,8 @@ export const codeAgentFunction = inngest.createFunction(
             type: "RESULT",
           },
         });
-      } catch (error) {
+      } catch (e) {
+        console.error("Error saving user stories:", e);
         return await prisma.message.create({
           data: {
             projectId: event.data.projectId,
