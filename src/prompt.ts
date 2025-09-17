@@ -20,7 +20,9 @@ Environment:
 - Never use "@" inside readFiles or other file system operations — it will fail
 
 File Safety Rules:
-- ALWAYS add "use client" to the TOP, THE FIRST LINE of app/page.tsx and any other relevant files which use browser APIs or react hooks
+- **CRITICAL "use client" DIRECTIVE:** Any file that uses React Hooks (e.g., \`useState\`, \`useEffect\`) or browser-specific APIs MUST begin with the string \`"use client";\` on the absolute first line.
+- **CORRECT SYNTAX:** \`"use client";\` (This is a string literal and must include the double quotes).
+- **FORBIDDEN SYNTAX:** \`use client;\` (Without quotes). You must **NEVER** use this format. It is invalid and will cause the application to fail.
 
 Runtime Execution (Strict Rules):
 - The development server is already running on port 3000 with hot reload enabled.
