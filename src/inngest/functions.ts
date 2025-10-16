@@ -17,6 +17,7 @@ import {
 } from "./utils";
 import { z } from "zod";
 import {
+  ARCHITECTURE_PROMPT,
   FRAGMENT_TITLE_PROMPT,
   PROMPT,
   RESPONSE_PROMPT,
@@ -27,6 +28,7 @@ import { prisma } from "@/lib/db";
 interface AgentState {
   summary: string;
   files: { [path: string]: string };
+  architecture: string;
 }
 
 export const codeAgentFunction = inngest.createFunction(
@@ -70,6 +72,7 @@ export const codeAgentFunction = inngest.createFunction(
       {
         summary: "",
         files: {},
+        architecture: "",
       },
       {
         messages: previousMessages,
@@ -199,7 +202,6 @@ export const codeAgentFunction = inngest.createFunction(
       },
     });
 
-    // Step 1: Generate User Stories first
     const userStoriesGenerator = createAgent({
       name: "user-stories-generator",
       description: "Generates structured user stories with acceptance criteria",
@@ -214,7 +216,6 @@ export const codeAgentFunction = inngest.createFunction(
       event.data.value || "Generate user stories for a web application"
     );
 
-    // Save User Stories first
     await step.run("save-user-stories", async () => {
       try {
         return await prisma.message.create({
@@ -239,7 +240,46 @@ export const codeAgentFunction = inngest.createFunction(
       }
     });
 
-    // Step 2: Run Code Agent
+    // Step 2: Generate System Architecture
+    const architectureAgent = createAgent({
+      name: "architecture-agent",
+      description: "Generates system architecture diagrams and documentation",
+      system: ARCHITECTURE_PROMPT,
+      model: gemini({
+        model: "gemini-2.0-flash-exp",
+        apiKey: process.env.GEMINI_API_KEY,
+      }),
+    });
+
+    const { output: architectureOutput } = await architectureAgent.run(
+      parseAgentOutput(userStoriesOutput)
+    );
+
+    await step.run("save-architecture", async () => {
+      try {
+        return await prisma.message.create({
+          data: {
+            projectId: event.data.projectId,
+            content: parseAgentOutput(architectureOutput),
+            role: "ASSISTANT",
+            type: "RESULT",
+          },
+        });
+      } catch (e) {
+        console.error("Error saving architecture:", e);
+        return await prisma.message.create({
+          data: {
+            projectId: event.data.projectId,
+            content:
+              "Something went wrong generating system architecture. Please try again!",
+            role: "ASSISTANT",
+            type: "ERROR",
+          },
+        });
+      }
+    });
+
+    // Step 3: Run Code Agent
     const network = createNetwork<AgentState>({
       name: "coding-agent-network",
       agents: [codeAgent],
@@ -260,7 +300,7 @@ export const codeAgentFunction = inngest.createFunction(
       { state }
     );
 
-    // Step 3: Generate response and fragment title
+    // Step 4: Generate response and fragment title
     const fragmentTitleGenerator = createAgent({
       name: "fragment-title-generator",
       description: "Generates fragment",
@@ -298,7 +338,7 @@ export const codeAgentFunction = inngest.createFunction(
       return `http://${host}`;
     });
 
-    // Step 4: Save Code Result
+    // Step 5: Save Code Result
     await step.run("save-code-result", async () => {
       if (isError) {
         return await prisma.message.create({
