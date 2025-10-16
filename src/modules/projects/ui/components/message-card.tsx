@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils"
 import Image from "next/image"
 import { format } from 'date-fns'
 import { ChevronRightIcon, Code2Icon } from "lucide-react"
+import { MermaidDiagram } from "./mermaid-diagram"
+import { parseArchitectureMessage, hasMermaidDiagram } from "../utils/parse-architecture"
 
 interface UserMessageProps {
     content: string
@@ -45,7 +47,7 @@ const FragmentCard = ({
                 <span className="text-sm">Preview</span>
             </div>
             <div className="flex items-center justify-center mt-0.5">
-                <ChevronRightIcon className="size-4"/>
+                <ChevronRightIcon className="size-4" />
             </div>
         </button>
     )
@@ -68,6 +70,9 @@ const AssistantMessage = ({
     onFragmentClick,
     type
 }: AssistantMessageProps) => {
+    const isArchitectureMessage = hasMermaidDiagram(content);
+    const parsedArchitecture = isArchitectureMessage ? parseArchitectureMessage(content) : null;
+
     return (
         <div className={cn(
             "flex flex-col group px-2 pb-4",
@@ -81,7 +86,21 @@ const AssistantMessage = ({
                 </span>
             </div>
             <div className="pl-8.5 flex flex-col gap-y-4">
-                <div className="whitespace-pre-wrap">{content}</div>
+                {isArchitectureMessage && parsedArchitecture ? (
+                    <>
+                        {parsedArchitecture.hasDiagram && parsedArchitecture.diagramContent && (
+                            <MermaidDiagram
+                                content={parsedArchitecture.diagramContent}
+                                className="mb-4"
+                            />
+                        )}
+                        {parsedArchitecture.documentation && (
+                            <div className="whitespace-pre-wrap">{parsedArchitecture.documentation}</div>
+                        )}
+                    </>
+                ) : (
+                    <div className="whitespace-pre-wrap">{content}</div>
+                )}
                 {fragment && type === "RESULT" && (
                     <FragmentCard
                         fragment={fragment}
