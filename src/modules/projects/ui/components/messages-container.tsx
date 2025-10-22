@@ -5,6 +5,9 @@ import { MessageForm } from "./message-form"
 import { useEffect, useRef } from "react"
 import { Fragment } from "@/generated/prisma"
 import { MessageLoading } from "./message-loading"
+import { UserStoriesLoading } from "./user-stories-loading"
+import { ArchitectureLoading } from "./architecture-loading"
+import { ArchitectureDiagramLoading } from "./architecture-diagram-loading"
 
 interface Props {
     projectId: string
@@ -40,6 +43,34 @@ export const MessagesContainer = ({ projectId, activeFragment, setActiveFragment
     const lastMessage = messages[messages.length - 1]
     const isLastMessageUser = lastMessage?.role === "USER"
 
+    // Determine which loading state to show based on message progression
+    const getUserStoriesMessage = () => messages.find(m =>
+        m.role === "ASSISTANT" &&
+        m.content.toLowerCase().includes("user stories")
+    )
+
+    const getArchitectureDiagramMessage = () => messages.find(m =>
+        m.role === "ASSISTANT" &&
+        m.content.includes("```mermaid") &&
+        m.content.includes("Architecture Diagram")
+    )
+
+    const getArchitectureDocsMessage = () => messages.find(m =>
+        m.role === "ASSISTANT" &&
+        !m.content.includes("```mermaid") &&
+        !m.content.toLowerCase().includes("user stories") &&
+        !m.fragment
+    )
+
+    const getCodeMessage = () => messages.find(m =>
+        m.role === "ASSISTANT" &&
+        m.fragment !== null
+    )
+
+    const showUserStoriesLoading = isLastMessageUser && !getUserStoriesMessage()
+    const showArchitectureLoading = getUserStoriesMessage() && !getArchitectureDiagramMessage() && !getArchitectureDocsMessage() && !showUserStoriesLoading
+    const showArchitectureDiagramLoading = getArchitectureDiagramMessage() && !getArchitectureDocsMessage() && !showUserStoriesLoading && !showArchitectureLoading
+    const showCodeLoading = getArchitectureDocsMessage() && !getCodeMessage() && !showUserStoriesLoading && !showArchitectureLoading && !showArchitectureDiagramLoading
 
     return (
         <div className="flex flex-col flex-1 min-h-0">
@@ -57,7 +88,10 @@ export const MessagesContainer = ({ projectId, activeFragment, setActiveFragment
                             type={message.type}
                         />
                     ))}
-                    {isLastMessageUser && <MessageLoading />}
+                    {showUserStoriesLoading && <UserStoriesLoading />}
+                    {showArchitectureLoading && <ArchitectureLoading />}
+                    {showArchitectureDiagramLoading && <ArchitectureDiagramLoading />}
+                    {showCodeLoading && <MessageLoading />}
                     <div ref={bottomRef} />
                 </div>
             </div>

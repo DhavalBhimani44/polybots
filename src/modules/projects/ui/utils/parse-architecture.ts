@@ -34,8 +34,15 @@ export const parseArchitectureMessage = (
   const afterMermaid = content.substring(match.index! + match[0].length).trim();
 
   // Remove the "## Architecture Documentation" header if present
-  const documentation = afterMermaid
+  let documentation = afterMermaid
     .replace(/^##\s*Architecture\s*Documentation\s*\n?/i, "")
+    .trim();
+
+  // Clean up markdown formatting
+  documentation = documentation
+    .replace(/\*\*(.*?)\*\*/g, "$1") // Remove bold formatting
+    .replace(/\*(.*?)\*/g, "$1") // Remove italic formatting
+    .replace(/`(.*?)`/g, "$1") // Remove code formatting
     .trim();
 
   return {
@@ -50,4 +57,30 @@ export const parseArchitectureMessage = (
  */
 export const hasMermaidDiagram = (content: string): boolean => {
   return /```mermaid\s*\n[\s\S]*?\n```/i.test(content);
+};
+
+/**
+ * Checks if a message content contains user stories
+ */
+export const hasUserStories = (content: string): boolean => {
+  return (
+    content.toLowerCase().includes("user stories") ||
+    content.includes("As a") ||
+    content.includes("Acceptance Criteria:")
+  );
+};
+
+/**
+ * Checks if a message content contains architecture documentation (without diagram)
+ */
+export const hasArchitectureDocs = (content: string): boolean => {
+  return (
+    !content.includes("```mermaid") &&
+    !content.toLowerCase().includes("user stories") &&
+    (content.toLowerCase().includes("system overview") ||
+      content.toLowerCase().includes("key components") ||
+      content.toLowerCase().includes("technology stack") ||
+      content.toLowerCase().includes("architectural decisions") ||
+      content.toLowerCase().includes("data flow"))
+  );
 };

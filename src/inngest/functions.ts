@@ -15,6 +15,7 @@ import {
   lastAssistantTextMessageContext,
   parseAgentOutput,
 } from "./utils";
+import { parseArchitectureMessage } from "../modules/projects/ui/utils/parse-architecture";
 import { z } from "zod";
 import {
   ARCHITECTURE_PROMPT,
@@ -88,7 +89,7 @@ export const codeAgentFunction = inngest.createFunction(
         apiKey: process.env.GEMINI_API_KEY,
         defaultParameters: {
           generationConfig: {
-            temperature: 1,
+            temperature: 0.7,
           },
         },
       }),
@@ -255,29 +256,56 @@ export const codeAgentFunction = inngest.createFunction(
       parseAgentOutput(userStoriesOutput)
     );
 
-    await step.run("save-architecture", async () => {
-      try {
-        return await prisma.message.create({
-          data: {
-            projectId: event.data.projectId,
-            content: parseAgentOutput(architectureOutput),
-            role: "ASSISTANT",
-            type: "RESULT",
-          },
-        });
-      } catch (e) {
-        console.error("Error saving architecture:", e);
-        return await prisma.message.create({
-          data: {
-            projectId: event.data.projectId,
-            content:
-              "Something went wrong generating system architecture. Please try again!",
-            role: "ASSISTANT",
-            type: "ERROR",
-          },
-        });
-      }
-    });
+    // Parse architecture output to separate diagram and documentation
+    const parsedArchitecture = parseArchitectureMessage(
+      parseAgentOutput(architectureOutput)
+    );
+
+    // Save architecture diagram first (if available)
+    if (parsedArchitecture.hasDiagram && parsedArchitecture.diagramContent) {
+      await step.run("save-architecture-diagram", async () => {
+        try {
+          return await prisma.message.create({
+            data: {
+              projectId: event.data.projectId,
+              content: `\`\`\`mermaid\n${parsedArchitecture.diagramContent}\n\`\`\`\n\n## Architecture Diagram`,
+              role: "ASSISTANT",
+              type: "RESULT",
+            },
+          });
+        } catch (e) {
+          console.error("Error saving architecture diagram:", e);
+          return null;
+        }
+      });
+    }
+
+    // Save architecture documentation separately (if available)
+    if (parsedArchitecture.documentation) {
+      await step.run("save-architecture-docs", async () => {
+        try {
+          return await prisma.message.create({
+            data: {
+              projectId: event.data.projectId,
+              content: parsedArchitecture.documentation!,
+              role: "ASSISTANT",
+              type: "RESULT",
+            },
+          });
+        } catch (e) {
+          console.error("Error saving architecture documentation:", e);
+          return await prisma.message.create({
+            data: {
+              projectId: event.data.projectId,
+              content:
+                "Something went wrong generating system architecture documentation. Please try again!",
+              role: "ASSISTANT",
+              type: "ERROR",
+            },
+          });
+        }
+      });
+    }
 
     // Step 3: Run Code Agent
     const network = createNetwork<AgentState>({
