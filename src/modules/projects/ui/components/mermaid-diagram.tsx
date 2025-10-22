@@ -94,13 +94,17 @@ export const MermaidDiagram = ({ content, className }: MermaidDiagramProps) => {
     }, [content]);
 
     return (
-        <Card className={cn("p-4 overflow-x-auto", className)}>
+        <Card className={cn("p-4 overflow-x-auto border-2 border-dashed border-muted-foreground/20 bg-gradient-to-br from-muted/30 to-muted/10", className)}>
+            <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 bg-gradient-to-r from-green-500 to-blue-500 rounded-full"></div>
+                <span className="text-xs font-medium text-muted-foreground">System Architecture</span>
+            </div>
             <div ref={diagramRef} className="mermaid-diagram" />
             {/* Debug: Show raw content in development */}
             {process.env.NODE_ENV === 'development' && (
                 <details className="mt-4 text-xs">
-                    <summary className="cursor-pointer text-muted-foreground">Debug: Show raw Mermaid content</summary>
-                    <pre className="mt-2 p-2 bg-muted rounded text-left overflow-auto whitespace-pre-wrap">
+                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">Debug: Show raw Mermaid content</summary>
+                    <pre className="mt-2 p-2 bg-muted rounded text-left overflow-auto whitespace-pre-wrap text-xs">
                         {content}
                     </pre>
                 </details>
